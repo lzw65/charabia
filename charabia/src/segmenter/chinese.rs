@@ -21,7 +21,8 @@ impl Segmenter for ChineseSegmenter {
 }
 
 fn read_lines<P>(filename: P) -> Vec<String>
-where P: AsRef<Path>,
+where
+    P: AsRef<Path>,
 {
     let path = filename.as_ref();
     if !path.exists() {
@@ -32,22 +33,21 @@ where P: AsRef<Path>,
     if let Ok(file) = File::open(&path) {
         let reader = io::BufReader::new(file);
         let mut lines = Vec::new();
-    
+
         for line in reader.lines() {
             if let Ok(line) = line {
                 lines.push(line);
             }
         }
-    
+
         return lines;
     }
-    return vec![]
+    return vec![];
 }
-
 
 static JIEBA: Lazy<Jieba> = Lazy::new(|| {
     let mut jieba = Jieba::new();
-    let lines = read_lines("./charabia/dictionaries/chinese_company_names/words.txt");
+    let lines = read_lines("./words.txt");
     for line in lines {
         jieba.add_word(line.as_str(), Some(99 as usize), None);
     }
