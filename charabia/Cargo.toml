@@ -25,8 +25,8 @@ serde = "1.0"
 slice-group-by = "0.3.0"
 whatlang = "0.16.2"
 lindera-core = "=0.27.1"
-lindera-dictionary = "0.27.1"
-lindera-tokenizer = { version = "0.27.1", default-features = false, optional = true }
+lindera-dictionary = "=0.27.1"
+lindera-tokenizer = { version = "=0.27.1", default-features = false, optional = true }
 pinyin = { version = "0.10.0", default-features = false, features = [
   "with_tone",
 ], optional = true }
