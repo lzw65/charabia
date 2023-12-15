@@ -91,7 +91,7 @@ mod test {
                 script: Script::Cj,
                 language: Some(Language::Cmn),
                 ..Default::default()
-            }
+            },
         ]
     }
 
@@ -117,7 +117,7 @@ mod test {
                 language: Some(Language::Cmn),
                 kind: TokenKind::Word,
                 ..Default::default()
-            }
+            },
         ]
     }
 

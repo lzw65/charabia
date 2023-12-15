@@ -9,12 +9,12 @@ use crate::segmenter::Segmenter;
 /// Chinese Script specialized [`Segmenter`].
 ///
 /// This Segmenter uses [`Jieba`] internally to segment the provided text
-/// without HMM feature.
+/// with HMM feature.
 pub struct ChineseSegmenter;
 
 impl Segmenter for ChineseSegmenter {
     fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o> {
-        let segmented = JIEBA.cut(to_segment, false); // disable Hidden Markov Models.
+        let segmented = JIEBA.cut_for_search(to_segment, true); // enable Hidden Markov Models.
 
         Box::new(segmented.into_iter())
     }
@@ -60,79 +60,13 @@ mod test {
 
     // Original version of the text.
     const TEXT: &str =
-        "人人生而自由﹐在尊嚴和權利上一律平等。他們賦有理性和良心﹐並應以兄弟關係的精神互相對待。";
+    "尊嚴割草机器人压缩饼干上海盛赟实业河北春高贸易上海椒龙数码深圳市宏业盛科技百事甜纺织湖北山东雅云卫生用品有限公司";
 
     // Segmented version of the text.
-    const SEGMENTED: &[&str] = &[
-        "人人",
-        "生而自由",
-        "﹐",
-        "在",
-        "尊",
-        "嚴",
-        "和",
-        "權",
-        "利",
-        "上",
-        "一律平等",
-        "。",
-        "他",
-        "們",
-        "賦",
-        "有",
-        "理性",
-        "和",
-        "良心",
-        "﹐",
-        "並",
-        "應",
-        "以",
-        "兄弟",
-        "關",
-        "係",
-        "的",
-        "精神",
-        "互相",
-        "對",
-        "待",
-        "。",
-    ];
+    const SEGMENTED: &[&str] = &["尊嚴","割草", "机器", "机器人", "压缩", "饼干", "压缩饼干", "上海", "盛赟", "实业", "河北", "春高", "贸易", "上海", "椒", "龙", "数码", "深圳", "深圳市", "宏业", "盛", "科技", "百事", "甜", "纺织", "湖北", "山东", "雅云", "卫生", "用品", "卫生用品", "有限", "公司", "有限公司"];
 
     // Segmented and normalized version of the text.
-    const TOKENIZED: &[&str] = &[
-        "人人",
-        "生而自由",
-        ",",
-        "在",
-        "尊",
-        "严",
-        "和",
-        "权",
-        "利",
-        "上",
-        "一律平等",
-        "。",
-        "他",
-        "们",
-        "赋",
-        "有",
-        "理性",
-        "和",
-        "良心",
-        ",",
-        "并",
-        "应",
-        "以",
-        "兄弟",
-        "关",
-        "系",
-        "的",
-        "精神",
-        "互相",
-        "对",
-        "待",
-        "。",
-    ];
+    const TOKENIZED: &[&str] = &["尊严", "割草", "机器", "机器人", "压缩", "饼干", "压缩饼干", "上海", "盛赟", "实业", "河北", "春高", "贸易", "上海", "椒", "龙", "数码", "深圳", "深圳市", "宏业", "盛", "科技", "百事", "甜", "纺织", "湖北", "山东", "雅云", "卫生", "用品", "卫生用品", "有限", "公司", "有限公司"];
 
     // Macro that run several tests on the Segmenter.
     test_segmenter!(ChineseSegmenter, TEXT, SEGMENTED, TOKENIZED, Script::Cj, Language::Cmn);
