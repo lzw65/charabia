@@ -84,23 +84,39 @@ impl<'o> Iterator for SegmentedTokenIter<'o, '_> {
     type Item = Token<'o>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let lemma = self.inner.next()?;
-        let char_start = self.char_index;
-        let byte_start = self.byte_index;
-
-        self.char_index += lemma.chars().count();
-        self.byte_index += lemma.len();
-
-        Some(Token {
-            lemma: Cow::Borrowed(lemma),
-            script: self.inner.script,
-            language: self.inner.language,
-            char_start,
-            char_end: self.char_index,
-            byte_start,
-            byte_end: self.byte_index,
-            ..Default::default()
-        })
+        let token_item = self.inner.next()?;
+        match  token_item {
+            TokenItem::Simple(lemma) => {
+                let char_start = self.char_index;
+                let byte_start = self.byte_index;
+        
+                self.char_index += lemma.chars().count();
+                self.byte_index += lemma.len();
+        
+                Some(Token {
+                    lemma: Cow::Borrowed(lemma),
+                    script: self.inner.script,
+                    language: self.inner.language,
+                    char_start,
+                    char_end: self.char_index,
+                    byte_start,
+                    byte_end: self.byte_index,
+                    ..Default::default()
+                })
+            },
+            TokenItem::WithPosition { text, char_start, char_end } => {
+                Some(Token {
+                    lemma: Cow::Borrowed(text),
+                    script: self.inner.script,
+                    language: self.inner.language,
+                    char_start,
+                    char_end,
+                    byte_start: char_start,
+                    byte_end: char_start + text.len(),
+                    ..Default::default()
+                })
+            }
+        }
     }
 }
 
@@ -112,7 +128,7 @@ impl<'o, 'tb> From<SegmentedStrIter<'o, 'tb>> for SegmentedTokenIter<'o, 'tb> {
 
 pub struct SegmentedStrIter<'o, 'tb> {
     inner: Box<dyn Iterator<Item = &'o str> + 'o>,
-    current: Box<dyn Iterator<Item = &'o str> + 'o>,
+    current: Box<dyn Iterator<Item = TokenItem<'o> > + 'o>,
     aho_iter: Option<AhoSegmentedStrIter<'o, 'tb>>,
     segmenter: &'static dyn Segmenter,
     options: &'tb SegmenterOption<'tb>,
@@ -144,13 +160,13 @@ impl<'o, 'tb> SegmentedStrIter<'o, 'tb> {
 }
 
 impl<'o, 'tb> Iterator for SegmentedStrIter<'o, 'tb> {
-    type Item = &'o str;
+    type Item = TokenItem<'o>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current.next() {
             Some(s) => Some(s),
             None => match self.aho_iter.as_mut().and_then(|aho_iter| aho_iter.next()) {
-                Some((s, MatchType::Match)) => Some(s),
+                Some((s, MatchType::Match)) => Some(TokenItem::Simple(s)),
                 Some((s, MatchType::Interleave)) => {
                     self.current = self.segmenter.segment_str(s);
 
@@ -261,16 +277,26 @@ pub struct SegmenterOption<'tb> {
     pub allow_list: Option<&'tb HashMap<Script, Vec<Language>>>,
 }
 
+pub enum TokenItem<'a> {
+    Simple(&'a str),
+    WithPosition {
+        text: &'a str,
+        char_start: usize,
+        char_end: usize,
+        // byte_start: usize,
+        // byte_end: usize,
+    },
+}
 /// Trait defining a segmenter.
 ///
 /// A segmenter should be at least a script specialized segmenter.
 pub trait Segmenter: Sync + Send {
     /// Segments the provided text creating an Iterator over `&str`.
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o>;
+    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o>;
 }
 
 impl Segmenter for Box<dyn Segmenter> {
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o> {
+    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = TokenItem<'o>> + 'o> {
         (**self).segment_str(s)
     }
 }
@@ -359,7 +385,7 @@ mod test {
     macro_rules! test_segmenter {
     ($segmenter:expr, $text:expr, $segmented:expr, $tokenized:expr, $script:expr, $language:expr) => {
             use crate::{Token, Language, Script};
-            use crate::segmenter::{Segment, AhoSegmentedStrIter, MatchType, DEFAULT_SEPARATOR_AHO};
+            use crate::segmenter::{TokenItem, Segment, AhoSegmentedStrIter, MatchType, DEFAULT_SEPARATOR_AHO};
             use crate::tokenizer::Tokenize;
             use super::*;
 
@@ -368,7 +394,16 @@ mod test {
 
                 let segmented_text: Vec<_> = AhoSegmentedStrIter::new($text, &DEFAULT_SEPARATOR_AHO).flat_map(|m| match m {
                     (text, MatchType::Match) => Box::new(Some(text).into_iter()),
-                    (text, MatchType::Interleave) => $segmenter.segment_str(text),
+                    // (text, MatchType::Interleave) => $segmenter.segment_str(text),
+                    (text, MatchType::Interleave) => {
+                        let result = $segmenter.segment_str(text);
+                        let s_vector:Vec<_> = result.map(|token_item| match token_item {
+                                TokenItem::Simple(s) => Some(s),
+                                TokenItem::WithPosition { text, .. } => Some(text),
+                            }).collect();
+                        Box::new(s_vector.into_iter())
+                    }
+    
                 }).collect();
                 assert_eq!(&segmented_text[..], $segmented, r#"
 Segmenter {} didn't segment the text as expected.

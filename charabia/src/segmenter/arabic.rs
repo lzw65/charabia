@@ -1,4 +1,4 @@
-use super::Segmenter;
+use super::{Segmenter, TokenItem};
 
 /// Arabic specialized [`Segmenter`].
 ///
@@ -12,7 +12,7 @@ pub struct ArabicSegmenter;
 
 // All specialized segmenters only need to implement the method `segment_str` of the `Segmenter` trait.
 impl Segmenter for ArabicSegmenter {
-    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o> {
+    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
         // check if to_segment starts with 'ال', 'أل', 'إل', 'آل' or 'ٱل'
         if to_segment.len() > 2
             && (to_segment.starts_with("ال")
@@ -21,9 +21,16 @@ impl Segmenter for ArabicSegmenter {
                 || to_segment.starts_with("آل")
                 || to_segment.starts_with("ٱل"))
         {
-            Box::new(vec![&to_segment[..4], &to_segment[4..]].into_iter())
+            let token_items: Vec<TokenItem> = vec![&to_segment[..4], &to_segment[4..]]
+            .into_iter()
+            .map(|s| TokenItem::Simple(s))
+            .collect();
+            Box::new(token_items.into_iter())
         } else {
-            Box::new(Some(to_segment).into_iter())
+            let token_items: Vec<TokenItem> = Some(to_segment).into_iter()
+            .map(|s| TokenItem::Simple(s))
+            .collect();
+            Box::new(token_items.into_iter())
         }
     }
 }

@@ -3,7 +3,7 @@ use fst::raw::Fst;
 use once_cell::sync::Lazy;
 
 use crate::segmenter::utils::FstSegmenter;
-use crate::segmenter::Segmenter;
+use crate::segmenter::{Segmenter, TokenItem};
 
 /// Thai specialized [`Segmenter`].
 ///
@@ -17,8 +17,13 @@ static WORDS_FST: Lazy<Fst<&[u8]>> =
 static FST_SEGMENTER: Lazy<FstSegmenter> = Lazy::new(|| FstSegmenter::new(&WORDS_FST));
 
 impl Segmenter for ThaiSegmenter {
-    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o> {
-        FST_SEGMENTER.segment_str(to_segment)
+    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o> {
+        let segment_iterator = FST_SEGMENTER.segment_str(to_segment);
+        let token_items: Vec<TokenItem> = segment_iterator
+        .into_iter()
+        .map(|s| TokenItem::Simple(s))
+        .collect();
+        Box::new(token_items.into_iter())
     }
 }
 

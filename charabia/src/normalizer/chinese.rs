@@ -20,18 +20,8 @@ impl CharNormalizer for ChineseNormalizer {
             None => c,
         };
 
-        // Normalize to Pinyin
-        // If we don't manage to convert the kvariant, we try to convert the original character.
-        // If none of them are converted, we return the kvariant.
-        Some(traditional_to_simplified(kvariant.to_string().as_str()).to_string().into())
-        // match kvariant.to_pinyin().or_else(|| c.to_pinyin()) {
-        //     Some(converted) => {
-        //         let with_tone = converted.with_tone();
-
-        //         Some(with_tone.to_string().into())
-        //     }
-        //     None => Some(kvariant.into()), // e.g. 杤
-        // }
+        // traditional_to_simplified
+        Some(traditional_to_simplified(&kvariant.to_string()).to_string().into())
     }
 
     fn should_normalize(&self, token: &Token) -> bool {

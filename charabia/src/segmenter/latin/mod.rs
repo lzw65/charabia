@@ -1,7 +1,7 @@
 #[cfg(feature = "latin-camelcase")]
 mod camel_case;
 
-use crate::segmenter::Segmenter;
+use crate::segmenter:: {Segmenter, TokenItem};
 
 /// Latin specialized [`Segmenter`].
 ///
@@ -9,15 +9,21 @@ pub struct LatinSegmenter;
 
 impl Segmenter for LatinSegmenter {
     #[cfg(not(feature = "latin-camelcase"))]
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o> {
-        Box::new(Some(s).into_iter())
+    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o> {
+        let token_items: Vec<TokenItem> = Some(s).into_iter()
+            .map(|lemma| TokenItem::Simple(lemma))
+            .collect();
+        Box::new(token_items.into_iter())
     }
 
     #[cfg(feature = "latin-camelcase")]
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o> {
+    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
         let lemmas = camel_case::split_camel_case_bounds(s);
-
-        Box::new(lemmas)
+        let token_items: Vec<TokenItem> = lemmas
+            .into_iter()
+            .map(|lemma| TokenItem::Simple(lemma))
+            .collect();
+        Box::new(token_items.into_iter())
     }
 }
 

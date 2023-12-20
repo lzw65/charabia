@@ -3,7 +3,7 @@ use lindera_dictionary::{DictionaryConfig, DictionaryKind};
 use lindera_tokenizer::tokenizer::{Tokenizer, TokenizerConfig};
 use once_cell::sync::Lazy;
 
-use crate::segmenter::Segmenter;
+use crate::segmenter::{Segmenter, TokenItem};
 
 /// Korean specialized [`Segmenter`].
 ///
@@ -20,9 +20,13 @@ static LINDERA: Lazy<Tokenizer> = Lazy::new(|| {
 });
 
 impl Segmenter for KoreanSegmenter {
-    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item = &'o str> + 'o> {
+    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o> {
         let segment_iterator = LINDERA.tokenize(to_segment).unwrap();
-        Box::new(segment_iterator.into_iter().map(|token| token.text))
+        let token_items: Vec<TokenItem> = segment_iterator
+        .iter()
+        .map(|token| TokenItem::Simple(token.text))
+        .collect();
+        Box::new(token_items.into_iter())
     }
 }
 
