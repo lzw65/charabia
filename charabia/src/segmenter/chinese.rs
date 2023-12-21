@@ -22,7 +22,8 @@ impl Segmenter for ChineseSegmenter {
                 char_start: token.start, 
                 char_end: token.end,
                 byte_start: token.byte_start,
-                byte_end: token.byte_end
+                byte_end: token.byte_end,
+                is_last_token: token.is_last_token
             })
             .collect();
         Box::new(token_items.into_iter())

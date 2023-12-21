@@ -104,17 +104,22 @@ impl<'o> Iterator for SegmentedTokenIter<'o, '_> {
                     ..Default::default()
                 })
             },
-            TokenItem::WithPosition { text, char_start, char_end, byte_start, byte_end } => {
-                Some(Token {
+            TokenItem::WithPosition { text, char_start, char_end, byte_start, byte_end, is_last_token } => {
+                let token = Some(Token {
                     lemma: Cow::Borrowed(text),
                     script: self.inner.script,
                     language: self.inner.language,
-                    char_start,
-                    char_end,
-                    byte_start: byte_start,
-                    byte_end: byte_end,
+                    char_start: self.char_index + char_start,
+                    char_end: self.char_index + char_end,
+                    byte_start: self.byte_index + byte_start,
+                    byte_end: self.byte_index + byte_end,
                     ..Default::default()
-                })
+                });
+                if is_last_token {
+                    self.char_index += char_end;
+                    self.byte_index += byte_end;
+                }
+                token
             }
         }
     }
@@ -277,6 +282,7 @@ pub struct SegmenterOption<'tb> {
     pub allow_list: Option<&'tb HashMap<Script, Vec<Language>>>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenItem<'a> {
     Simple(&'a str),
     WithPosition {
@@ -285,6 +291,7 @@ pub enum TokenItem<'a> {
         char_end: usize,
         byte_start: usize,
         byte_end: usize,
+        is_last_token: bool,
     },
 }
 /// Trait defining a segmenter.
