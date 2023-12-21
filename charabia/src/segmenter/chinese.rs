@@ -20,7 +20,9 @@ impl Segmenter for ChineseSegmenter {
             .map(|token| TokenItem::WithPosition { 
                 text: token.word, 
                 char_start: token.start, 
-                char_end: token.end 
+                char_end: token.end,
+                byte_start: token.byte_start,
+                byte_end: token.byte_end
             })
             .collect();
         Box::new(token_items.into_iter())

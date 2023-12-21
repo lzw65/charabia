@@ -104,15 +104,15 @@ impl<'o> Iterator for SegmentedTokenIter<'o, '_> {
                     ..Default::default()
                 })
             },
-            TokenItem::WithPosition { text, char_start, char_end } => {
+            TokenItem::WithPosition { text, char_start, char_end, byte_start, byte_end } => {
                 Some(Token {
                     lemma: Cow::Borrowed(text),
                     script: self.inner.script,
                     language: self.inner.language,
                     char_start,
                     char_end,
-                    byte_start: char_start,
-                    byte_end: char_start + text.len(),
+                    byte_start: byte_start,
+                    byte_end: byte_end,
                     ..Default::default()
                 })
             }
@@ -283,8 +283,8 @@ pub enum TokenItem<'a> {
         text: &'a str,
         char_start: usize,
         char_end: usize,
-        // byte_start: usize,
-        // byte_end: usize,
+        byte_start: usize,
+        byte_end: usize,
     },
 }
 /// Trait defining a segmenter.
