@@ -173,7 +173,7 @@ impl<'o, 'tb> Iterator for SegmentedStrIter<'o, 'tb> {
             None => match self.aho_iter.as_mut().and_then(|aho_iter| aho_iter.next()) {
                 Some((s, MatchType::Match)) => Some(TokenItem::Simple(s)),
                 Some((s, MatchType::Interleave)) => {
-                    self.current = self.segmenter.segment_str(s);
+                    self.current = self.segmenter.segment_str(s, None);
 
                     self.next()
                 }
@@ -299,12 +299,12 @@ pub enum TokenItem<'a> {
 /// A segmenter should be at least a script specialized segmenter.
 pub trait Segmenter: Sync + Send {
     /// Segments the provided text creating an Iterator over `&str`.
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o>;
+    fn segment_str<'o>(&self, s: &'o str, is_query: Option<bool>) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o>;
 }
 
 impl Segmenter for Box<dyn Segmenter> {
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = TokenItem<'o>> + 'o> {
-        (**self).segment_str(s)
+    fn segment_str<'o>(&self, s: &'o str, is_query: Option<bool>) -> Box<dyn Iterator<Item = TokenItem<'o>> + 'o> {
+        (**self).segment_str(s, is_query)
     }
 }
 
@@ -347,8 +347,9 @@ pub trait Segment<'o> {
     fn segment_with_option<'tb>(
         &self,
         options: &'tb SegmenterOption<'tb>,
+        is_query: Option<bool>
     ) -> SegmentedTokenIter<'o, 'tb> {
-        self.segment_str_with_option(options).into()
+        self.segment_str_with_option(options, is_query).into()
     }
 
     /// Segments the provided text creating an Iterator over `&str`.
@@ -367,7 +368,7 @@ pub trait Segment<'o> {
     /// assert_eq!(segments.next(), Some("quick"));
     /// ```
     fn segment_str(&self) -> SegmentedStrIter<'o, 'o> {
-        self.segment_str_with_option(&SegmenterOption { aho: None, allow_list: None })
+        self.segment_str_with_option(&SegmenterOption { aho: None, allow_list: None }, None)
     }
 
     /// Segments the provided text creating an Iterator over `&str` where you can specify an allowed list of languages to be used with a script.
@@ -375,6 +376,7 @@ pub trait Segment<'o> {
     fn segment_str_with_option<'tb>(
         &self,
         options: &'tb SegmenterOption<'tb>,
+        is_query: Option<bool>
     ) -> SegmentedStrIter<'o, 'tb>;
 }
 
@@ -382,6 +384,7 @@ impl<'o> Segment<'o> for &'o str {
     fn segment_str_with_option<'tb>(
         &self,
         options: &'tb SegmenterOption<'tb>,
+        is_query: Option<bool>
     ) -> SegmentedStrIter<'o, 'tb> {
         SegmentedStrIter::new(self, options)
     }
@@ -403,7 +406,7 @@ mod test {
                     (text, MatchType::Match) => Box::new(Some(text).into_iter()),
                     // (text, MatchType::Interleave) => $segmenter.segment_str(text),
                     (text, MatchType::Interleave) => {
-                        let result = $segmenter.segment_str(text);
+                        let result = $segmenter.segment_str(text, None);
                         let s_vector:Vec<_> = result.map(|token_item| match token_item {
                                 TokenItem::Simple(s) => Some(s),
                                 TokenItem::WithPosition { text, .. } => Some(text),

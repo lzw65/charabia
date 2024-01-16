@@ -9,7 +9,7 @@ pub struct LatinSegmenter;
 
 impl Segmenter for LatinSegmenter {
     #[cfg(not(feature = "latin-camelcase"))]
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o> {
+    fn segment_str<'o>(&self, s: &'o str, is_query: Option<bool>) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o> {
         let token_items: Vec<TokenItem> = Some(s).into_iter()
             .map(|lemma| TokenItem::Simple(lemma))
             .collect();
@@ -17,7 +17,7 @@ impl Segmenter for LatinSegmenter {
     }
 
     #[cfg(feature = "latin-camelcase")]
-    fn segment_str<'o>(&self, s: &'o str) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
+    fn segment_str<'o>(&self, s: &'o str, is_query: Option<bool>) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
         let lemmas = camel_case::split_camel_case_bounds(s);
         let token_items: Vec<TokenItem> = lemmas
             .into_iter()

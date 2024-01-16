@@ -12,7 +12,7 @@ pub struct ArabicSegmenter;
 
 // All specialized segmenters only need to implement the method `segment_str` of the `Segmenter` trait.
 impl Segmenter for ArabicSegmenter {
-    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
+    fn segment_str<'o>(&self, to_segment: &'o str, is_query: Option<bool>) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
         // check if to_segment starts with 'ال', 'أل', 'إل', 'آل' or 'ٱل'
         if to_segment.len() > 2
             && (to_segment.starts_with("ال")

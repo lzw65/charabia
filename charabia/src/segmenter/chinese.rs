@@ -14,19 +14,30 @@ use crate::segmenter:: {Segmenter, TokenItem};
 pub struct ChineseSegmenter;
 
 impl Segmenter for ChineseSegmenter {
-    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
-        let token_items: Vec<TokenItem> = JIEBA.tokenize(to_segment, TokenizeMode::Search, true)
-            .iter()
-            .map(|token| TokenItem::WithPosition { 
-                text: token.word, 
-                char_start: token.start, 
-                char_end: token.end,
-                byte_start: token.byte_start,
-                byte_end: token.byte_end,
-                is_last_token: token.is_last_token
-            })
-            .collect();
-        Box::new(token_items.into_iter())
+    fn segment_str<'o>(&self, to_segment: &'o str, is_query: Option<bool>) -> Box<dyn Iterator<Item = TokenItem<'o> > + 'o> {
+        match is_query {
+            Some(true) => {
+                let segmented = JIEBA.cut(to_segment, true); // enable Hidden Markov Models.
+                let token_items: Vec<TokenItem> = segmented.into_iter()
+                .map(|s| TokenItem::Simple(s))
+                .collect();
+                Box::new(token_items.into_iter())
+            },
+            _ => {
+                let token_items: Vec<TokenItem> = JIEBA.tokenize(to_segment, TokenizeMode::Search, true)
+                    .iter()
+                    .map(|token| TokenItem::WithPosition { 
+                        text: token.word, 
+                        char_start: token.start, 
+                        char_end: token.end,
+                        byte_start: token.byte_start,
+                        byte_end: token.byte_end,
+                        is_last_token: token.is_last_token
+                    })
+                    .collect();
+                Box::new(token_items.into_iter())
+            },
+        }
     }
 }
 

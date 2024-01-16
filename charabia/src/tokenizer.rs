@@ -108,23 +108,23 @@ impl<'tb> Tokenizer<'tb> {
     ///
     /// The provided text is segmented creating tokens,
     /// then tokens are normalized and classified depending on the list of normalizers and classifiers in [`normalizer::NORMALIZERS`].
-    pub fn tokenize<'t, 'o>(&'t self, original: &'o str) -> NormalizedTokenIter<'o, 't> {
-        original.segment_with_option(&self.segmenter_option).normalize(&self.normalizer_option)
+    pub fn tokenize<'t, 'o>(&'t self, original: &'o str, is_query: Option<bool>) -> NormalizedTokenIter<'o, 't> {
+        original.segment_with_option(&self.segmenter_option, is_query).normalize(&self.normalizer_option)
     }
 
     /// Same as [`tokenize`] but attaches each [`Token`] to its corresponding portion of the original text.
     pub fn reconstruct<'t, 'o>(&'t self, original: &'o str) -> ReconstructedTokenIter<'o, 't> {
-        ReconstructedTokenIter { original, token_iter: self.tokenize(original) }
+        ReconstructedTokenIter { original, token_iter: self.tokenize(original, None) }
     }
 
     /// Segments the provided text creating an Iterator over [`Token`].
-    pub fn segment<'t, 'o>(&'t self, original: &'o str) -> SegmentedTokenIter<'o, 't> {
-        original.segment_with_option(&self.segmenter_option)
+    pub fn segment<'t, 'o>(&'t self, original: &'o str, is_query: Option<bool>) -> SegmentedTokenIter<'o, 't> {
+        original.segment_with_option(&self.segmenter_option, is_query)
     }
 
     /// Segments the provided text creating an Iterator over `&str`.
-    pub fn segment_str<'t, 'o>(&'t self, original: &'o str) -> SegmentedStrIter<'o, 't> {
-        original.segment_str_with_option(&self.segmenter_option)
+    pub fn segment_str<'t, 'o>(&'t self, original: &'o str, is_query: Option<bool>) -> SegmentedStrIter<'o, 't> {
+        original.segment_str_with_option(&self.segmenter_option, is_query)
     }
 }
 
@@ -379,7 +379,7 @@ mod test {
             let mut builder = TokenizerBuilder::default();
             let tokens = {
                 let tokenizer = builder.build();
-                tokenizer.tokenize(text).collect()
+                tokenizer.tokenize(text, None).collect()
             };
             tokens
         };
@@ -391,7 +391,7 @@ mod test {
             let builder = builder.stop_words(&stop_words);
             let tokens = {
                 let tokenizer = builder.build();
-                tokenizer.tokenize(text).collect()
+                tokenizer.tokenize(text, None).collect()
             };
             tokens
         };

@@ -17,7 +17,7 @@ static WORDS_FST: Lazy<Fst<&[u8]>> =
 static FST_SEGMENTER: Lazy<FstSegmenter> = Lazy::new(|| FstSegmenter::new(&WORDS_FST));
 
 impl Segmenter for ThaiSegmenter {
-    fn segment_str<'o>(&self, to_segment: &'o str) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o> {
+    fn segment_str<'o>(&self, to_segment: &'o str, is_query: Option<bool>) -> Box<dyn Iterator<Item =TokenItem<'o> > + 'o> {
         let segment_iterator = FST_SEGMENTER.segment_str(to_segment);
         let token_items: Vec<TokenItem> = segment_iterator
         .into_iter()
